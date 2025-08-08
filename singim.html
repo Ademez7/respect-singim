@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>لعبة سين جيم - سيرفر ريسبكت</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo&display=swap');
+  body, html {
+    margin:0; padding:0; height:100%;
+    font-family: 'Cairo', sans-serif;
+    background: transparent; /* أصبح شفافاً لظهور الخلفية المتحركة الموجودة في ::before */
+    color: #eee;
+    overflow-x: hidden;
+  }
+  /* خلفية متحركة متعددة الطبقات */
+  body::before, body::after {
+    content:"";
+    position: fixed;
+    top:0; left:0; width:100%; height:100%;
+    pointer-events: none;
+    filter: blur(30px) saturate(110%);
+  }
+  body::before {
+    background: linear-gradient(120deg, #4b0082 0%, #8a2be2 25%, #220050 50%, #4b0082 75%, #ff66c4 100%);
+    background-size: 300% 300%;
+    animation: moveGradient1 18s ease infinite;
+    z-index: -2;
+    opacity: 0.8;
+  }
+  body::after {
+    background: radial-gradient(circle at 10% 10%, rgba(255,90,184,0.18), transparent 15%),
+                radial-gradient(circle at 90% 90%, rgba(73,0,255,0.14), transparent 20%),
+                linear-gradient(90deg, rgba(123,64,255,0.08), rgba(0,0,0,0));
+    background-size: 200% 200%;
+    animation: moveGradient2 28s ease infinite;
+    z-index: -1;
+    mix-blend-mode: screen;
+    opacity: 0.9;
+  }
+
+  @keyframes moveGradient1 {
+    0%{background-position:0% 50%}
+    25%{background-position:50% 100%}
+    50%{background-position:100% 50%}
+    75%{background-position:50% 0%}
+    100%{background-position:0% 50%}
+  }
+  @keyframes moveGradient2 {
+    0%{background-position:100% 0%}
+    50%{background-position:0% 100%}
+    100%{background-position:100% 0%}
+  }
+  /* شعار ريسبكت أعلى يسار */
+  #logo-respect {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: 140px;
+    filter: drop-shadow(0 0 4px #8a2be2);
+    cursor: default;
+    z-index: 1000;
+  }
+  /* شعار دربحة تحت يسار */
+  #logo-darbha {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    width: 110px;
+    filter: drop-shadow(0 0 6px #8a2be2);
+    cursor: default;
+    z-index: 1000;
+  }
+
+  #app {
+    max-width: 900px;
+    margin: 60px auto 40px;
+    background: rgba(30,10,50,0.85);
+    border-radius: 15px;
+    box-shadow: 0 0 20px #7b40ffcc;
+    padding: 1.5rem 2rem;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+  }
+  h1, h2 {
+    text-align: center;
+    color: #c59fff;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 8px #7b40ffcc;
+  }
+
+  /* شاشة اختيار اللاعبين */
+  #start-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  #start-screen label {
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+  #start-screen input {
+    font-size: 1.1rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(127,63,255,0.18);
+    outline: none;
+    text-align: center;
+    width: 250px;
+    background: rgba(255,255,255,0.03);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 6px 18px rgba(11,0,30,0.6);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    backdrop-filter: blur(6px);
+  }
+  #start-screen input::placeholder {
+    color: rgba(221,183,255,0.6);
+    font-weight: 500;
+  }
+  #start-screen input:focus {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(123,64,255,0.22), inset 0 0 8px rgba(123,64,255,0.06);
+    border: 1px solid rgba(123,64,255,0.6);
+    background: linear-gradient(180deg, rgba(123,64,255,0.06), rgba(0,0,0,0.04));
+  }
+  #btn-start {
+    margin-top: 1rem;
+    background: #6a00b7;
+    color: white;
+    font-weight: 700;
+    font-size: 1.3rem;
+    padding: 0.5rem 2.2rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 0 12px #aa66ff;
+    transition: background-color 0.3s ease;
+  }
+  #btn-start:disabled {
+    background: #440060;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  #btn-start:hover:not(:disabled) {
+    background: #8b33ff;
+  }
+
+  /* الجدول - الأصناف والأسئلة */
+  #questions-table {
+    margin-top: 15px;
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+    user-select: none;
+  }
+  #questions-table th, #questions-table td {
+    border: 2px solid #7b40ff;
+    padding: 12px 8px;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #ddd;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  #questions-table th {
+    background: #4b0082;
+    color: #ffdfff;
+    text-shadow: 0 0 6px #9b5fff;
+  }
+  #questions-table td.question-cell {
+    background: #2e004f;
+    cursor: pointer;
+    user-select:none;
+  }
+  #questions-table td.question-cell:hover:not(.used) {
+    background: #7b40ff;
+    color: white;
+    text-shadow: 0 0 8px #fff;
+  }
+  #questions-table td.question-cell.used {
+    background: #220032;
+    color: #555;
+    cursor: default;
+    text-decoration: line-through;
+    box-shadow: inset 0 0 5px #3b0e75;
+  }
+
+  /* شاشة عرض السؤال */
+  #question-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 20px;
+  }
+  #question-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    max-width: 800px;
+    color: #f3d1ff;
+    text-shadow: 0 0 6px #9b5fff;
+  }
+  #question-image {
+    max-width: 420px;
+    max-height: 280px;
+    border-radius: 12px;
+    border: 3px solid #7b40ff;
+    box-shadow: 0 0 18px #aa66ff88;
+    object-fit: contain;
+  }
+  #answers-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    max-width: 840px;
+  }
+  .answer-btn {
+    background: #4b0082;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 0.7rem 1.3rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: default;
+    user-select: none;
+    box-shadow: 0 0 8px #7b40ff;
+    transition: all 0.3s ease;
+    flex: 1 1 40%;
+    min-width: 130px;
+    max-width: 200px;
+  }
+  .answer-btn.correct {
+    background-color: #28a745 !important;
+    box-shadow: 0 0 15px #28a745cc !important;
+    color: #fff !important;
+  }
+  .answer-btn.wrong {
+    opacity: 0.4 !important;
+  }
+
+  /* شريط المؤقت (مضاف) - لن يؤثر على أماكن الأزرار لأنّه موضعي */
+  #timer-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 840px;
+    height: 14px;
+    margin-top: 6px;
+    pointer-events: none; /* لا يؤثر على التفاعل */
+  }
+  #timer-bar {
+    position: absolute;
+    left: 0; top: 3px;
+    height: 8px;
+    width: 100%;
+    border-radius: 8px;
+    background: linear-gradient(90deg, rgba(123,64,255,0.95), rgba(107,0,183,0.95));
+    box-shadow: 0 0 10px rgba(123,64,255,0.25);
+    transition: width 0.25s linear;
+  }
+  #timer-text {
+    position: absolute;
+    right: 6px; top: -2px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: #ffdfff;
+    text-shadow: 0 0 6px #7b40ff;
+    pointer-events: none;
+  }
+
+  /* أزرار التحكم */
+  #controls {
+    margin-top: 15px;
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+  }
+  #controls button {
+    background: #6a00b7;
+    border: none;
+    border-radius: 12px;
+    padding: 0.7rem 1.8rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 0 10px #aa66ff;
+    transition: background-color 0.3s ease;
+  }
+  #controls button:hover:not(:disabled) {
+    background: #8b33ff;
+  }
+  #controls button:disabled {
+    background: #440060;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* لوحة النقاط واللاعب */
+  #status-bar {
+    margin-top: 20px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    user-select: none;
+    color: #d8b8ff;
+  }
+  #status-bar span {
+    margin: 0 20px;
+    text-shadow: 0 0 6px #9b5fff;
+  }
+  #status-bar .active-player {
+    text-decoration: underline;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  /* شاشة النهاية */
+  #end-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    min-height: 400px;
+    color: #ffc6ff;
+    text-shadow: 0 0 8px #b364ff;
+  }
+  #end-screen h2 {
+    font-size: 2.3rem;
+  }
+  #btn-restart {
+    padding: 0.8rem 2.8rem;
+    font-size: 1.3rem;
+    border-radius: 14px;
+    border: none;
+    background: #8b33ff;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 0 20px #b97eff;
+    transition: background-color 0.3s ease;
+  }
+  #btn-restart:hover {
+    background: #b364ff;
+  }
+
+  /* مودال قوانين و Team Manager */
+  .modal {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.98);
+    background: linear-gradient(180deg, rgba(46,0,79,0.95), rgba(40,6,70,0.92));
+    padding: 1.1rem 1.3rem;
+    border-radius: 14px;
+    max-width: 520px;
+    width: 92%;
+    box-shadow: 0 10px 40px rgba(11,0,30,0.55), inset 0 1px 0 rgba(255,255,255,0.02);
+    color: #e9dbff;
+    display: none;
+    z-index: 2000;
+    user-select: none;
+    backdrop-filter: blur(8px) saturate(120%);
+    border: 1px solid rgba(123,64,255,0.08);
+    opacity: 0;
+    transition: transform 0.22s ease, opacity 0.22s ease;
+  }
+  .modal.show {
+    display: block;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .modal-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, rgba(123,64,255,0.18), rgba(255,102,196,0.12));
+    box-shadow: 0 6px 20px rgba(123,64,255,0.12);
+    color: #ffdfff;
+  }
+  .modal-title {
+    font-size: 1.15rem;
+    color: #ffdfff;
+    font-weight: 800;
+    text-shadow: 0 0 8px rgba(150,90,255,0.08);
+  }
+  .close-modal {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: transparent;
+    border: none;
+    color: #ffdfff;
+    font-size: 1rem;
+    padding: 6px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.14s ease;
+  }
+  .close-modal:hover { background: rgba(255,255,255,0.03); }
+  .modal-body {
+    margin-top: 12px;
+    font-size: 0.98rem;
+    color: #e8d6ff;
+    line-height: 1.6;
+  }
+  .modal-body ul { padding-left: 1.05rem; }
+  .modal-art {
+    width: 100%;
+    height: 160px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 30px rgba(11,0,30,0.45);
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+  .modal-art svg { width:100%; height:100%; display:block; }
+  .modal-body .modal-image-caption { margin-top:8px; font-size:0.88rem; color: #e7dfff; opacity:0.9; }
+  
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .modal .action-btn {
+    background: #6a00b7;
+    border: none;
+    padding: 0.55rem 0.95rem;
+    border-radius: 10px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(106,0,183,0.12);
+  }
+  .modal .action-btn.secondary {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.05);
+    color: #ffdfff;
+  }
+  @media (max-width:520px) {
+    .modal { padding: 1rem; }
+    .modal-icon { width: 44px; height:44px; }
+  }
+
+  /* كانفتي *//* كانفتي */
+  #confetti-canvas {
+    pointer-events: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1500;
+  }
+
+  /* أزرار القوانين و مدير الفريق */
+  #top-controls {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 10px;
+    z-index: 1100;
+  }
+  #top-controls button {
+    background: #4b0082;
+    border: none;
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    box-shadow: 0 0 10px #7b40ff;
+    transition: background-color 0.3s ease;
+  }
+  #top-controls button:hover {
+    background: #7b40ff;
+  }
+
+  /* جدول الأصناف */
+  #questions-table th.category-header {
+    background: #7b40ff;
+    font-size: 1.2rem;
+    color: #fff;
+    letter-spacing: 0.05em;
+  }
+
+  /* الرسائل */
+  #message-box {
+    margin-top: 15px;
+    font-size: 1.15rem;
+    color: #ddaaff;
+    font-weight: 600;
+    min-height: 28px;
+    text-align: center;
+    text-shadow: 0 0 6px #7b40ff;
+  }
+  /* Responsive */
+  @media (max-width: 720px) {
+    #app {
+      margin: 20px 12px 30px;
+      padding: 1rem 1rem;
+    }
+    #question-text {
+      font-size: 1.2rem;
+    }
+    .answer-btn {
+      flex: 1 1 100%;
+      max-width: 100%;
+    }
+    #questions-table th, #questions-table td {
+      font-size: 0.9rem;
+      padding: 10px 4px;
+    }
+    #btn-start {
+      width: 100%;
+    }
+  }
+  /* تحسينات جمالية إضافية */
+  /* تأثير طفو للشعارات */
+  @keyframes logoFloat { 0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)} }
+  #logo-respect, #logo-darbha { will-change: transform; transition: transform 0.28s ease; }
+  #logo-respect { animation: logoFloat 6s ease-in-out infinite; }
+  #logo-darbha { animation: logoFloat 7.2s ease-in-out 0.4s infinite; }
+
+  /* تأثير خفيف على خلايا الجدول عند المرور لزيادة الإحساس بالتجاوب دون تغيير الموضع */
+  #questions-table td.question-cell { transition: transform 220ms ease, box-shadow 220ms ease, background-color 220ms ease; }
+  #questions-table td.question-cell:hover:not(.used) { transform: translateY(-6px); box-shadow: 0 10px 30px rgba(123,64,255,0.12); }
+
+  /* تحسين أزرار الإجابة: تفاعل صغير عند المرور وتحديد الإجابة */
+  .answer-btn { transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease; cursor: pointer; }
+  .answer-btn:hover:not(.correct):not(.wrong) { transform: translateY(-6px) scale(1.02); box-shadow: 0 14px 30px rgba(123,64,255,0.12); }
+  .answer-btn.selected { outline: 3px solid rgba(123,64,255,0.14); box-shadow: 0 14px 30px rgba(123,64,255,0.18); transform: translateY(-6px); }
+
+  /* تدرّج لطيف عند ظهور شاشة السؤال (يستهدف العنصر عندما يعرضه الجافاسكربت inline display: flex) */
+  #question-screen { opacity: 0; transform: translateY(6px); transition: opacity 260ms ease, transform 260ms ease; }
+  #question-screen[style*="display: flex"] { opacity: 1; transform: translateY(0); }
+
+  /* تمييز اللاعب النشط بتوهّج ناعم */
+  @keyframes pulseGlow { 0%{text-shadow:0 0 6px #9b5fff}50%{text-shadow:0 0 18px #b88cff}100%{text-shadow:0 0 6px #9b5fff} }
+  #status-bar .active-player { animation: pulseGlow 2.6s ease-in-out infinite; }
+
+  /* تحسين ظهور الصورة الخاصة بالسؤال */
+  #question-image { transition: opacity 260ms ease, transform 260ms ease; opacity: 0.96; }
+  #question-image[src]:not([src=""]) { opacity: 1; transform: translateY(0); }
+
+  /* تحسين طفيف للـ modal عند الظهور (قليل حركة) */
+  .modal.show { box-shadow: 0 20px 60px rgba(11,0,30,0.6); }
+
+</style>
+</head>
+<body>
+
+<!-- الشعارات -->
+<img id="logo-respect" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0jiBdRHBEDf8ga208Sltl92m4OgSkxhOe6Q&s" alt="Respect Logo" />
+<img id="logo-darbha" src="https://yt3.googleusercontent.com/p-On6Dxwm4tStG5r5wukPU3AyHguoUogUTsaF5C_hlqL2cPcqIULNxp_qt_co2aYOrH5lgSz5A=s900-c-k-c0x00ffffff-no-rj" alt="Darbha Logo" />
+
+<div id="top-controls">
+  <button id="btn-rules">القوانين</button>
+  <button id="btn-team-manager">Team Manager</button>
+</div>
+
+<div id="app">
+
+  <!-- شاشة اختيار أسماء اللاعبين -->
+  <section id="start-screen">
+    <h1>مرحبا بك في لعبة سين جيم - سيرفر ريسبكت</h1>
+    <label for="player1-name">اسم اللاعب الأول:</label>
+    <input type="text" id="player1-name" placeholder="اكتب اسم اللاعب 1" autocomplete="off" maxlength="12" />
+    <label for="player2-name">اسم اللاعب الثاني:</label>
+    <input type="text" id="player2-name" placeholder="اكتب اسم اللاعب 2" autocomplete="off" maxlength="12" />
+    <button id="btn-start" disabled>ابدأ اللعبة</button>
+
+    <div id="intro-message" style="margin-top:1rem; color:#ccbbff; font-weight:600; font-size:1rem; text-align:center;">
+      اختر أسماء اللاعبين ثم اضغط ابدأ للعب. بعد اختيار سؤال من الجدول، يتناوب اللاعبان على الإجابة.
+    </div>
+  </section>
+
+  <!-- جدول الأسئلة -->
+  <section id="questions-screen" style="display:none; flex-direction: column;">
+    <h2>جدول الأسئلة - اختر سؤالاً للعب</h2>
+    <table id="questions-table" aria-label="جدول الأسئلة">
+      <thead>
+        <tr>
+          <th class="category-header">اللاعبين</th>
+          <th class="category-header">الإدارة</th>
+          <th class="category-header">الشخصيات</th>
+          <th class="category-header">معلومات عامة</th>
+          <th class="category-header">الإحصائيات والتواريخ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- صفوف النقاط 100،200،300،400،500 -->
+      </tbody>
+    </table>
+
+    <div id="message-box"></div>
+  </section>
+
+  <!-- شاشة السؤال -->
+  <section id="question-screen">
+    <h2 id="question-text"></h2>
+    <img id="question-image" src="" alt="صورة السؤال" />
+
+    <!-- شريط المؤقت (لا يغير مكان أي زر لأنه موضعي ومتحكم به) -->
+    <div id="timer-wrapper" aria-hidden="false">
+      <div id="timer-bar" role="progressbar" aria-valuemin="0" aria-valuemax="30" aria-valuenow="30"></div>
+      <div id="timer-text">30s</div>
+    </div>
+
+    <div id="answers-container"></div>
+    <div id="controls">
+      <button id="btn-show-answer">عرض الإجابة</button>
+      <button id="btn-correct" disabled>صح</button>
+      <button id="btn-wrong" disabled>خطأ</button>
+    </div>
+    <div id="status-bar" aria-live="polite"></div>
+  </section>
+
+  <!-- شاشة النهاية -->
+  <section id="end-screen">
+    <h2 id="end-message"></h2>
+    <button id="btn-restart">إعادة اللعب</button>
+  </section>
+
+</div>
+
+<!-- مودال قوانين -->
+<div id="rules-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="rules-title" tabindex="-1">
+  <button class="close-modal" aria-label="إغلاق">✕</button>
+  <div class="modal-header">
+    <div class="modal-icon">📝</div>
+    <div class="modal-title" id="rules-title">قوانين اللعبة</div>
+  </div>
+  <div class="modal-body">
+    <div class="modal-art" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#4b0082"/><stop offset="1" stop-color="#ff66c4"/></linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#g1)"/>
+        <g transform="translate(60,40)" fill="#fff" opacity="0.95">
+          <rect x="0" y="0" width="220" height="180" rx="12" fill="rgba(0,0,0,0.14)"/>
+          <path d="M30 50h160v16H30z M30 82h120v12H30z M30 110h80v12H30z" fill="#ffdfff" opacity="0.95"/>
+          <circle cx="190" cy="40" r="26" fill="#ffdfff" opacity="0.12"/>
+          <path d="M162 34 l16 16 30-30" stroke="#ffdfff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        <text x="320" y="170" fill="#fff" font-size="64" font-family="Cairo, sans-serif" font-weight="700">قوانين</text>
+      </svg>
+    </div>
+    <p style="margin:0 0 8px 0; font-weight:700; color:#ffdfff;">مرّحباً — قواعد سريعة وواضحة:</p>
+    <ul>
+      <li>يتم اختيار السؤال من جدول الأسئلة.</li>
+      <li>يجيب اللاعب المختار على السؤال.</li>
+      <li>يحدد المشرف صحة الإجابة باستخدام أزرار "صح" أو "خطأ".</li>
+      <li>إذا كانت الإجابة صحيحة تُضاف النقاط للاعب الحالي.</li>
+      <li>ينتقل الدور إلى اللاعب التالي بعد كل سؤال.</li>
+      <li>تنتهي اللعبة عند الإجابة على جميع الأسئلة.</li>
+    </ul>
+    <div style="margin-top:10px; font-size:0.92rem; color: #e4d3ff;">نصيحة: اختر إجابة ثم اضغط "عرض الإجابة" ليظهر الاختبار للمشرف.</div>
+  </div>
+  <div class="modal-actions">
+    <button class="action-btn secondary close-modal">فهمت</button>
+  </div>
+</div>
+
+<!-- مودال مدير الفريق -->
+<div id="team-manager-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="team-manager-title" tabindex="-1">
+  <button class="close-modal" aria-label="إغلاق">✕</button>
+  <div class="modal-header">
+    <div class="modal-icon">👥</div>
+    <div class="modal-title" id="team-manager-title">Team Manager</div>
+  </div>
+  <div class="modal-body">
+    <div class="modal-art" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="g2" x1="0" x2="1"><stop offset="0" stop-color="#2b1b6b"/><stop offset="1" stop-color="#6a00b7"/></linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#g2)"/>
+        <g transform="translate(70,50)" fill="#fff" opacity="0.95">
+          <circle cx="80" cy="60" r="36" fill="rgba(255,255,255,0.08)"/>
+          <circle cx="150" cy="60" r="36" fill="rgba(255,255,255,0.06)"/>
+          <path d="M40 140c20-30 80-30 100 0" stroke="#ffdfff" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path d="M110 140c20-30 80-30 100 0" stroke="#ffdfff" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        </g>
+        <text x="320" y="170" fill="#fff" font-size="44" font-family="Cairo, sans-serif" font-weight="700">Team Manager</text>
+      </svg>
+    </div>
+    <p style="margin:0 0 8px 0; font-weight:700; color:#ffdfff;">معلومات عن المدير والفريق</p>
+    <p style="margin:0 0 8px 0;">المبرمج الخاص بالموقع: <b>misalles#1306</b> على ديسكورد</p>
+    <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:10px;">قريباً: واجهة إدارة الفريق (إضافة/حذف أعضاء، عرض الأعضاء، تعيين مناصب) — يمكنك طلب إضافات محددة وسيتم تنفيذها.</div>
+  </div>
+  <div class="modal-actions">
+    <button class="action-btn secondary close-modal">إغلاق</button>
+  </div>
+</div>
+
+<!-- كانفتي --><!-- كانفتي -->
+<canvas id="confetti-canvas"></canvas>
+
+<script>
+(() => {
+  const players = [];
+  let currentPlayerIndex = 0;
+  let scores = [0, 0];
+  let currentQuestion = null;
+
+  // الأصناف والأسئلة كما طلبت مع الصور
+  // ترتيب الأسئلة في مصفوفات كل صنف 5 أسئلة بزيادة 100 نقطة لكل سؤال
+  const categories = {
+    "اللاعبين": [
+      {text:"من هو أفضل لاعب في سيرفر ريسبكت؟", answer:"ميدو", points:100,
+        options:["ميدو","دربحة","مالك","نيفو"],
+        image:"https://i.imgur.com/ROqTfVk.jpg"
+      },
+      {text:"من هو لقب اللاعب دربحة؟", answer:"الملك", points:200,
+        options:["الملك","الزعيم","الأسطورة","المحترف"],
+        image:"https://i.imgur.com/8W2EjI0.jpg"
+      },
+      {text:"من هو مؤسس سيرفر ريسبكت؟", answer:"دربحة", points:300,
+        options:["دربحة","مالك","ميدو","علي"],
+        image:"https://i.imgur.com/8W2EjI0.jpg"
+      },
+      {text:"ما هو اسم الشخصية الشهيرة التي يلعبها دربحة؟", answer:"الملك", points:400,
+        options:["الملك","الزعيم","الأسطورة","المحترف"],
+        image:"https://i.imgur.com/UW91kRl.jpg"
+      },
+      {text:"من هو أول قائد للشرطة في ريسبكت؟", answer:"أنور بن محمد", points:500,
+        options:["عقاب","كافح","فواز","أنور بن محمد"],
+        image:"https://pbs.twimg.com/media/GSJ3cu8aUAQ7KCw.jpg"
+      }
+    ],
+    "الإدارة": [
+      {text:"من هو أول فاوندر لسيرفر ريسبكت؟", answer:"وولف", points:100,
+        options:["دربحة","وولف","ليون","صخب"],
+        image:"https://svgsilh.com/svg/303792.svg"
+      },
+      {text:"من هو أول رابر في مدينة ريسبكت؟", answer:"ستيف", points:200,
+        options:["أبو غالي","ستيف","فهيدان","رستا"],
+        image:"https://cdn.discordapp.com/attachments/1398214030874902600/1403328461522600076/image.png"
+      },
+      {text:"كم عدد الفاوندرز الذين مروا على ريسبكت؟", answer:"4", points:300,
+        options:["5","3","2","4"],
+        image:"https://pbs.twimg.com/profile_images/1910040033752436736/ehntqoFl_400x400.jpg"
+      },
+      {text:"ما هي ثاني أهم طريقة للتفعيل في ريسبكت؟", answer:"المقابلة الفورية", points:400,
+        options:["واسطة مع نيفو","المقابلة الفورية","التفعيل بالفويس","أن تكون يوتيوبر"],
+        image:"https://media.discordapp.net/attachments/1398214030874902600/1403329757843689492/image.png"
+      },
+      {text:"من هو المسؤول في سيرفر ديسكورد دربحة؟", answer:"نيفو", points:500,
+        options:["نيفو","محمد","أبو غالي","قيس سعيد"],
+        image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPds7jOxTzBabpr_xOOhkoH67ZpU3-aJ22UA&s"
+      }
+    ],
+    "الشخصيات": [
+      {text:"ما هو الاسم الحقيقي لشخصية الزعيم؟", answer:"أبو سعود", points:100,
+        options:["مفرح","نيفو","أبو سعود","شملان"],
+        image:"https://pbs.twimg.com/media/Gr-y5hYXkAAk_RW?format=jpg&name=large"
+      },
+      {text:"من هو الرجل الثالث للغرب؟", answer:"كحيلان الكايد", points:200,
+        options:["كحيلان","فرعون","شملان","أبو لبن"],
+        image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ9jBL9FAl82AmWlZw5rCqmNFP3gjyCWxCXsg&s"
+      },
+      {text:"ما هو أكبر مشروع للمستثمر مفرح؟", answer:"محطة البركة", points:300,
+        options:["ورشة البركة","فندق البركة","محطة البركة","تجارة السلاح"],
+        image:"https://i.ytimg.com/vi/C7ZYs6d-oqs/hq720.jpg"
+      },
+      {text:"من هي الشخصية التي ساهمت في تفجير النووي أيام الحاكم دربحة وكانت من أشد أعدائه؟", answer:"فواز الجنازة", points:400,
+        options:["فواز الجنازة","ليون","خاروش","عناب"],
+        image:"https://i.pinimg.com/736x/39/35/17/3935173acb5119435791722bf2eebb4f.jpg"
+      },
+      {text:"من هو أكبر شخصية في ريسبكت من حيث العمر؟", answer:"أنور بن محمد", points:500,
+        options:["أنور","خاروش","كافح","عقاب"],
+        image:"https://pbs.twimg.com/media/GGpgIyhWIAA1GsL.jpg"
+      }
+    ],
+    "معلومات عامة": [
+      {text:"من هو من استعمل النووي في ريسبكت؟", answer:"دربحة", points:100,
+        options:["دربحة","كافح","شدد","البعبع"],
+        image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLUroS960aM16Kuv15GNrmttPG25Ydw3JOHg&s"
+      },
+      {text:"ما هو اسم شبيه شخصية ماثيو ستانلي؟", answer:"ثيو", points:200,
+        options:["ثيو","نيفو","علي ستانلي","أبو كلي"],
+        image:"https://pbs.twimg.com/media/GcCIVOlWQAEBmlr.jpg:large"
+      },
+      {text:"من هو أول قائد للشرطة في ريسبكت؟", answer:"أنور بن محمد", points:300,
+        options:["عقاب","كافح","فواز","أنور بن محمد"],
+        image:"https://pbs.twimg.com/media/GSJ3cu8aUAQ7KCw.jpg"
+      },
+      {text:"من هو الشخص الذي قام بخطف عقاب المخلوط يوم كان قائد الشرطة؟", answer:"أبو نوع", points:400,
+        options:["مصعب","كافح","أبو نوح","شدد"],
+        image:"https://pbs.twimg.com/media/GOp-4BoXIAAuftf.jpg"
+      },
+      {text:"ما هي أول محكومية صدرت في حق المجرم عناب؟", answer:"السجن المؤبد", points:500,
+        options:["الإعدام","السجن المؤبد","البراءة","السجن 5240 شهر"],
+        image:"https://pbs.twimg.com/media/GUAAt-CX0AAi-31.jpg"
+      }
+    ],
+    "الإحصائيات والتواريخ": [
+      {text:"متى بدأ سيرفر ريسبكت؟", answer:"2015", points:100,
+        options:["2014","2015","2016","2017"],
+        image:"https://cdn-icons-png.flaticon.com/512/2920/2920036.png"
+      },
+      {text:"كم عدد اللاعبين الحاليين في السيرفر؟", answer:"1500+", points:200,
+        options:["1000+","1200+","1500+","2000+"],
+        image:"https://cdn-icons-png.flaticon.com/512/2920/2920097.png"
+      },
+      {text:"ما هو أكبر حدث تم تنظيمه؟", answer:"مهرجان الصيف", points:300,
+        options:["مهرجان الشتاء","مهرجان الصيف","سباق الشوارع","حفلة رأس السنة"],
+        image:"https://cdn-icons-png.flaticon.com/512/2920/2920204.png"
+      },
+      {text:"متى أقيم سباق الشوارع الكبير؟", answer:"شهر أغسطس", points:400,
+        options:["شهر يوليو","شهر أغسطس","شهر سبتمبر","شهر أكتوبر"],
+        image:"https://cdn-icons-png.flaticon.com/512/2920/2920085.png"
+      },
+      {text:"كم عدد القتلى في الحروب الكبرى؟", answer:"حوالي 300", points:500,
+        options:["حوالي 200","حوالي 250","حوالي 300","حوالي 350"],
+        image:"https://cdn-icons-png.flaticon.com/512/2920/2920124.png"
+      }
+    ]
+  };
+
+  // عناصر الصفحة
+  const startScreen = document.getElementById('start-screen');
+  const player1Input = document.getElementById('player1-name');
+  const player2Input = document.getElementById('player2-name');
+  const btnStart = document.getElementById('btn-start');
+  const questionsScreen = document.getElementById('questions-screen');
+  const questionsTableBody = document.querySelector('#questions-table tbody');
+  const questionScreen = document.getElementById('question-screen');
+  const questionTextEl = document.getElementById('question-text');
+  const questionImage = document.getElementById('question-image');
+  const answersContainer = document.getElementById('answers-container');
+  const btnShowAnswer = document.getElementById('btn-show-answer');
+  const btnCorrect = document.getElementById('btn-correct');
+  const btnWrong = document.getElementById('btn-wrong');
+  const statusBar = document.getElementById('status-bar');
+  const endScreen = document.getElementById('end-screen');
+  const endMessage = document.getElementById('end-message');
+  const btnRestart = document.getElementById('btn-restart');
+  const messageBox = document.getElementById('message-box');
+  const btnRules = document.getElementById('btn-rules');
+  const btnTeamManager = document.getElementById('btn-team-manager');
+  const rulesModal = document.getElementById('rules-modal');
+  const teamManagerModal = document.getElementById('team-manager-modal');
+
+  // مؤقت - عناصر
+  const timerWrapper = document.getElementById('timer-wrapper');
+  const timerBar = document.getElementById('timer-bar');
+  const timerText = document.getElementById('timer-text');
+
+  // بيانات اللعب
+  let questionsStatus = {}; // لتتبع الأسئلة المستخدمة
+  let currentCategory = null;
+  let currentPoints = null;
+
+  // نشاط اللاعب الحالي (0 أو 1)
+  let activePlayer = 0;
+
+  // مؤقت الداخلي
+  let timerInterval = null;
+  let timerRemaining = 0;
+  const TIMER_DURATION = 30; // ثواني
+
+  // ---- تفعيل زر ابدأ فقط إذا تم إدخال اسماء ----
+  function checkNames() {
+    btnStart.disabled = !(player1Input.value.trim() && player2Input.value.trim());
+  }
+  player1Input.addEventListener('input', checkNames);
+  player2Input.addEventListener('input', checkNames);
+
+  // --- بناء جدول الأسئلة من الكود ---
+  function buildQuestionsTable() {
+    questionsTableBody.innerHTML = "";
+    // نقاط الأسئلة ثابتة [100,200,300,400,500]
+    const pointsLevels = [100, 200, 300, 400, 500];
+    for(let i = 0; i < pointsLevels.length; i++) {
+      const tr = document.createElement('tr');
+      for(const catName of Object.keys(categories)) {
+        const question = categories[catName][i];
+        const td = document.createElement('td');
+        td.classList.add('question-cell');
+        td.textContent = question ? question.points : "";
+        if(question) {
+          td.title = question.text;
+          td.dataset.category = catName;
+          td.dataset.index = i;
+          td.classList.remove('used');
+          td.addEventListener('click', () => {
+            if(td.classList.contains('used')) return;
+            startQuestion(catName, i);
+          });
+        }
+        tr.appendChild(td);
+      }
+      questionsTableBody.appendChild(tr);
+    }
+  }
+
+  // --- بدء مؤقت السؤال ---
+  function startTimer(duration=TIMER_DURATION) {
+    clearTimer();
+    timerRemaining = duration;
+    timerWrapper.style.display = 'block';
+    updateTimerUI();
+    // تحديث كل 200ms ليكون سلساً
+    timerInterval = setInterval(() => {
+      timerRemaining -= 0.2; // تقليل بعشر جزء
+      if(timerRemaining <= 0) {
+        timerRemaining = 0;
+        updateTimerUI();
+        clearTimer();
+        // انتهاء الوقت => يعتبر خطأ ويعطي الدور التالي
+        messageBox.textContent = 'انتهى الوقت! تم اعتبار السؤال مستخدماً.';
+        markQuestionUsed(currentCategory, currentPoints);
+        // ننتظر 700ms ليرى المشرف النتيجة ثم نذهب للدور التالي
+        setTimeout(() => nextTurn(), 700);
+        return;
+      }
+      updateTimerUI();
+    }, 200);
+  }
+  function updateTimerUI() {
+    const pct = Math.max(0, Math.min(1, timerRemaining / TIMER_DURATION));
+    timerBar.style.width = (pct * 100) + '%';
+    timerBar.setAttribute('aria-valuenow', Math.round(timerRemaining));
+    timerText.textContent = Math.ceil(timerRemaining) + 's';
+  }
+  function clearTimer() {
+    if(timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    // إخفاء شريط المؤقت بعد عرض الإجابة أو انتهاء السؤال
+    // نترك wrapper ظاهراً فقط أثناء السؤال
+    timerBar.style.width = '0%';
+    // لا نغيّر مكان العناصر الأخرى
+  }
+
+  // --- بدء سؤال ---
+  function startQuestion(category, index) {
+    currentCategory = category;
+    currentPoints = categories[category][index].points;
+    currentQuestion = categories[category][index];
+
+    // عرض شاشة السؤال
+    startScreen.style.display = 'none';
+    questionsScreen.style.display = 'none';
+    questionScreen.style.display = 'flex';
+    endScreen.style.display = 'none';
+    messageBox.textContent = '';
+
+    // تحديث نص السؤال والصورة والخيارات
+    questionTextEl.textContent = currentQuestion.text;
+    questionImage.src = currentQuestion.image;
+    questionImage.alt = "صورة السؤال";
+
+    // عرض خيارات الإجابة
+    answersContainer.innerHTML = '';
+    currentQuestion.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'answer-btn';
+      btn.textContent = opt;
+      answersContainer.appendChild(btn);
+    });
+
+    // أزرار التحكم
+    btnShowAnswer.disabled = false;
+    btnCorrect.disabled = true;
+    btnWrong.disabled = true;
+
+    // إعادة تفعيل أزرار الخيارات
+    Array.from(answersContainer.children).forEach(b => {
+      b.classList.remove('correct', 'wrong', 'selected');
+      b.disabled = false;
+    });
+
+    // عرض اللاعب الحالي
+    updateStatusBar();
+
+    // تخبر المشرف باللاعب الحالي
+    messageBox.textContent = `دور اللاعب: ${players[activePlayer]}`;
+
+    // تفعيل اختيار إجابة (ولكن فقط إظهارها، القرار للمشرف)
+    answersContainer.onclick = e => {
+      if(e.target.tagName !== 'BUTTON') return;
+      if(btnShowAnswer.disabled) return; // الإجابة معروضة بالفعل
+
+      // تمييز الإجابة المختارة فقط
+      Array.from(answersContainer.children).forEach(b=>{
+        b.classList.remove('selected');
+      });
+      e.target.classList.add('selected');
+    };
+
+    // بدء المؤقت عند عرض السؤال
+    startTimer(TIMER_DURATION);
+  }
+
+  // --- تحديث شريط الحالة ---
+  function updateStatusBar() {
+    statusBar.innerHTML = `
+      اللاعب الحالي: <span class="active-player">${players[activePlayer]}</span>
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      النقاط: 
+      <span> ${players[0]} = ${scores[0]}</span>
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      <span> ${players[1]} = ${scores[1]}</span>
+    `;
+  }
+
+  // --- عرض الإجابة ---
+  btnShowAnswer.onclick = () => {
+    const selectedBtn = answersContainer.querySelector('.selected');
+    if(!selectedBtn) {
+      alert('اختر إجابة أولاً');
+      return;
+    }
+    btnShowAnswer.disabled = true;
+    btnCorrect.disabled = false;
+    btnWrong.disabled = false;
+
+    // إيقاف المؤقت عندما يعرض المشرف الإجابة
+    clearTimer();
+
+    // تعطيل خيارات
+    Array.from(answersContainer.children).forEach(b => b.disabled = true);
+
+    // تمييز الإجابات
+    Array.from(answersContainer.children).forEach(b => {
+      if(b.textContent === currentQuestion.answer) {
+        b.classList.add('correct');
+      } else {
+        b.classList.add('wrong');
+      }
+    });
+
+    // تغيير عنوان السؤال إلى الإجابة الصحيحة
+    questionTextEl.textContent = `الإجابة الصحيحة: ${currentQuestion.answer}`;
+  };
+
+  // --- المشرف يضغط صح ---
+  btnCorrect.onclick = () => {
+    // إيقاف أي مؤقت
+    clearTimer();
+    scores[activePlayer] += currentQuestion.points;
+    markQuestionUsed(currentCategory, currentPoints);
+    nextTurn();
+  };
+
+  // --- المشرف يضغط خطأ ---
+  btnWrong.onclick = () => {
+    clearTimer();
+    markQuestionUsed(currentCategory, currentPoints);
+    nextTurn();
+  };
+
+  // --- تعليم السؤال كمستخدم (مستعمل) ---
+  function markQuestionUsed(category, points) {
+    const rows = questionsTableBody.querySelectorAll('tr');
+    for(let tr of rows) {
+      for(let td of tr.children) {
+        if(td.dataset.category === category && td.textContent == points) {
+          td.classList.add('used');
+          td.removeEventListener('click', () => {});
+          td.style.cursor = 'default';
+        }
+      }
+    }
+  }
+
+  // --- الدور التالي ---
+  function nextTurn() {
+    // تغيير اللاعب
+    activePlayer = (activePlayer + 1) % 2;
+    currentQuestion = null;
+    currentCategory = null;
+    currentPoints = null;
+    questionScreen.style.display = 'none';
+    questionsScreen.style.display = 'flex';
+    messageBox.textContent = `دور اللاعب: ${players[activePlayer]}`;
+    updateStatusBar();
+
+    // إعادة ضبط شريط المؤقت
+    clearTimer();
+
+    // تحقق من نهاية اللعبة
+    if(isGameOver()) {
+      showEndScreen();
+    }
+  }
+
+  // --- تحقق إذا كل الأسئلة مستخدمة ---
+  function isGameOver() {
+    const allUsed = Array.from(questionsTableBody.querySelectorAll('td.question-cell')).every(td => td.classList.contains('used'));
+    return allUsed;
+  }
+
+  // --- عرض شاشة النهاية ---
+  function showEndScreen() {
+    questionsScreen.style.display = 'none';
+    questionScreen.style.display = 'none';
+    endScreen.style.display = 'flex';
+
+    // تحديد الفائز أو تعادل
+    if(scores[0] > scores[1]) {
+      endMessage.textContent = `الفائز: ${players[0]} بـ ${scores[0]} نقطة! 🎉🎉`;
+    } else if(scores[1] > scores[0]) {
+      endMessage.textContent = `الفائز: ${players[1]} بـ ${scores[1]} نقطة! 🎉🎉`;
+    } else {
+      endMessage.textContent = `تعادل بين اللاعبين بـ ${scores[0]} نقطة! 🤝`;
+    }
+
+    startConfetti();
+  }
+
+  // --- إعادة تشغيل اللعبة ---
+  btnRestart.onclick = () => {
+    stopConfetti();
+    scores = [0, 0];
+    activePlayer = 0;
+    currentQuestion = null;
+    currentCategory = null;
+    currentPoints = null;
+    questionScreen.style.display = 'none';
+    endScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+    messageBox.textContent = '';
+    player1Input.value = '';
+    player2Input.value = '';
+    btnStart.disabled = true;
+    buildQuestionsTable();
+    clearTimer();
+  };
+
+  // --- بدء اللعبة بعد اختيار الأسماء ---
+  btnStart.onclick = () => {
+    players[0] = player1Input.value.trim();
+    players[1] = player2Input.value.trim();
+    scores = [0, 0];
+    activePlayer = 0;
+    currentQuestion = null;
+    currentCategory = null;
+    currentPoints = null;
+
+    startScreen.style.display = 'none';
+    questionsScreen.style.display = 'flex';
+    questionScreen.style.display = 'none';
+    endScreen.style.display = 'none';
+    messageBox.textContent = `دور اللاعب: ${players[activePlayer]}`;
+
+    buildQuestionsTable();
+    updateStatusBar();
+  };
+
+  // --- مودال القوانين ---
+  function openModal(modal){
+    if(!modal) return;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+    try{ modal.focus(); }catch(e){}
+  }
+  function closeModal(modal){
+    if(!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+  }
+  btnRules.addEventListener('click', ()=> openModal(rulesModal));
+  btnTeamManager.addEventListener('click', ()=> openModal(teamManagerModal));
+  // إغلاق مودال عند الضغط على زر إغلاق داخل المودال
+  document.querySelectorAll('.modal .close-modal').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const m = e.target.closest('.modal');
+      closeModal(m);
+    });
+  });
+
+  // إغلاق المودال عند الضغط على ESC
+  window.addEventListener('keydown', e => {
+    if(e.key === "Escape"){
+      [rulesModal, teamManagerModal].forEach(m => {
+        if(m && m.classList && m.classList.contains('show')){
+          closeModal(m);
+        }
+      });
+    }
+  });
+
+  // ----- كانفتي جميل عند النهاية -----
+  // (مستعمل من كود بسيط مفتوح المصدر)
+  const confettiCanvas = document.getElementById('confetti-canvas');
+  const ctx = confettiCanvas.getContext('2d');
+  let confettiActive = false;
+  let confettiParticles = [];
+
+  function randomRange(min, max) {
+    return Math.random()*(max-min)+min;
+  }
+
+  function ConfettiParticle() {
+    this.x = randomRange(0, window.innerWidth);
+    this.y = randomRange(-20, 0);
+    this.size = randomRange(7, 12);
+    this.speed = randomRange(1, 3);
+    this.angle = randomRange(0, 360);
+    this.color = `hsl(${randomRange(250,280)}, 70%, 70%)`;
+    this.tilt = randomRange(-10, 10);
+    this.tiltAngle = 0;
+    this.tiltSpeed = randomRange(0.05, 0.1);
+  }
+  ConfettiParticle.prototype.update = function() {
+    this.y += this.speed;
+    this.tiltAngle += this.tiltSpeed;
+    this.tilt = Math.sin(this.tiltAngle) * 15;
+
+    if(this.y > window.innerHeight) {
+      this.y = randomRange(-20, 0);
+      this.x = randomRange(0, window.innerWidth);
+      this.speed = randomRange(1,3);
+    }
+  }
+  ConfettiParticle.prototype.draw = function() {
+    ctx.beginPath();
+    ctx.lineWidth = this.size / 2;
+    ctx.strokeStyle = this.color;
+    ctx.moveTo(this.x + this.tilt + this.size / 4, this.y);
+    ctx.lineTo(this.x + this.tilt, this.y + this.tilt + this.size / 2);
+    ctx.stroke();
+  }
+
+  function resizeCanvas() {
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function startConfetti() {
+    confettiActive = true;
+    confettiParticles = [];
+    for(let i=0; i<150; i++){
+      confettiParticles.push(new ConfettiParticle());
+    }
+    requestAnimationFrame(updateConfetti);
+  }
+  function stopConfetti() {
+    confettiActive = false;
+    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  }
+  function updateConfetti() {
+    if(!confettiActive) return;
+    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    confettiParticles.forEach(p => {
+      p.update();
+      p.draw();
+    });
+    requestAnimationFrame(updateConfetti);
+  }
+
+  // بداية جاهزة للعب
+  buildQuestionsTable();
+})();
+</script>
+</body>
+</html>
