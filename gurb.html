@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <title>L'emploi du temps</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="description" content="Calendrier éducatif organisé avec un design sophistiqué pour la gestion de l'emploi du temps d'études" />
+  <meta name="theme-color" content="#0a0a0a" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #0a0a0a;      
+      --card: #1a1a1a;     
+      --primary: #d4af37;   
+      --secondary: #a09078; 
+      --text: #e8e8e8;    
+      --muted: #888888;     
+      --border: #333333;
+      --accent: #c9a961;
+      --dark-bg: #0f0f0f;
+      --light-gold: #e8d5b7;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Cairo', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(15px, 5vw, 30px);
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: slideDown 0.6s ease-out;
+      padding: 20px 0;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    header h1 {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      margin: 0 0 10px;
+      color: var(--primary);
+      text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+      letter-spacing: 0.5px;
+      transition: all 0.3s ease;
+      font-weight: 700;
+      word-wrap: break-word;
+    }
+
+    header h1:hover {
+      transform: scale(1.05);
+      text-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+      color: var(--light-gold);
+    }
+
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      letter-spacing: 0.3px;
+    }
+
+    .table-wrapper {
+      background: rgba(26, 26, 26, 0.9);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(212, 175, 55, 0.15);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(212, 175, 55, 0.2);
+      animation: slideUp 0.6s ease-out;
+      transition: all 0.4s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .table-wrapper:hover {
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.8), 0 0 50px rgba(212, 175, 55, 0.25);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: linear-gradient(90deg, #2a2a2a, #3d3d3d);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 3px solid var(--primary);
+    }
+
+    thead th {
+      padding: clamp(12px, 3vw, 20px) clamp(8px, 2vw, 16px);
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      font-weight: 700;
+      color: var(--primary);
+      text-align: center;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+      background: rgba(212, 175, 55, 0.1);
+    }
+
+    tbody tr {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      position: relative;
+    }
+
+    tbody tr::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 4px;
+      background: linear-gradient(180deg, var(--primary), var(--accent));
+      transform: scaleY(0);
+      transform-origin: center;
+      transition: transform 0.4s ease;
+      z-index: 1;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    tbody tr:hover {
+      background-color: rgba(212, 175, 55, 0.08);
+      transform: translateX(8px);
+      box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.08);
+    }
+
+    tbody tr:hover::before {
+      transform: scaleY(1);
+    }
+
+    tbody tr:active {
+      background-color: rgba(56, 189, 248, 0.18);
+    }
+
+    td {
+      padding: clamp(12px, 3vw, 20px) clamp(8px, 2vw, 16px);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      font-size: clamp(0.85rem, 2vw, 0.95rem);
+      transition: all 0.3s ease;
+    }
+
+    td.day {
+      font-weight: 700;
+      color: var(--light-gold);
+      white-space: normal;
+      font-size: clamp(1rem, 3vw, 1.1rem);
+      letter-spacing: 0.5px;
+      text-transform: capitalize;
+      transition: all 0.3s ease;
+      word-break: break-word;
+    }
+
+    tbody tr:hover td.day {
+      color: var(--primary);
+      text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+    }
+
+    .day-content {
+      display: none;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px solid var(--primary);
+    }
+
+    tbody tr.expanded .day-content {
+      display: grid;
+      animation: expandContent 0.4s ease-out;
+    }
+
+    @keyframes expandContent {
+      from {
+        opacity: 0;
+        max-height: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        max-height: 500px;
+        transform: translateY(0);
+      }
+    }
+
+    .time {
+      display: inline-block;
+      padding: clamp(6px, 2vw, 8px) clamp(10px, 2.5vw, 14px);
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(160, 144, 120, 0.1));
+      color: var(--light-gold);
+      font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+      font-weight: 600;
+      margin: clamp(4px, 1.5vw, 6px) clamp(2px, 1vw, 4px);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.1);
+    }
+
+    .time:hover {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(160, 144, 120, 0.2));
+      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.2);
+      transform: translateY(-2px);
+      border-color: rgba(212, 175, 55, 0.6);
+    }
+
+    .activity {
+      margin-top: 8px;
+      font-size: clamp(0.85rem, 2vw, 0.95rem);
+      color: var(--text);
+      padding: clamp(8px, 2vw, 12px);
+      background: rgba(212, 175, 55, 0.08);
+      border-left: 3px solid var(--primary);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .activity:hover {
+      background: rgba(212, 175, 55, 0.15);
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.12);
+    }
+
+    .expand-icon {
+      display: inline-block;
+      margin-left: 8px;
+      transition: transform 0.4s ease;
+      font-size: 1.2rem;
+    }
+
+    tbody tr.expanded .expand-icon {
+      transform: rotate(180deg);
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      animation: fadeIn 1s ease-out 0.5s both;
+      transition: all 0.3s ease;
+    }
+
+    footer:hover {
+      color: var(--primary);
+    }
+
+    @media (max-width: 1024px) {
+      header {
+        margin-bottom: 30px;
+      }
+
+      .table-wrapper {
+        border-radius: 16px;
+      }
+
+      thead th {
+        padding: 14px 12px;
+      }
+
+      tbody tr {
+        padding: 10px;
+      }
+
+      td {
+        padding: 14px 12px;
+      }
+
+      footer {
+        margin-top: 30px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      header {
+        margin-bottom: 25px;
+      }
+
+      header h1 {
+        font-size: 1.6rem;
+      }
+
+      .table-wrapper {
+        border-radius: 14px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(212, 175, 55, 0.15);
+      }
+
+      table, thead, tbody, th, td, tr {
+        display: block;
+        width: 100%;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tbody tr {
+        margin-bottom: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: visible;
+        background: rgba(26, 26, 26, 0.8);
+        padding: 10px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        position: relative;
+      }
+
+      tbody tr::before {
+        display: none;
+      }
+
+      tbody tr:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+      }
+
+      td {
+        text-align: left;
+        padding: 10px 0;
+        border-bottom: none;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: flex-start;
+      }
+
+      td.day {
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding: 0;
+      }
+
+      td[data-label="activité"] {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        display: inline-block;
+        margin-right: 8px;
+        color: var(--primary);
+        min-width: 70px;
+        flex-shrink: 0;
+      }
+
+      td.day::before {
+        display: none;
+      }
+
+      .time {
+        display: block;
+        margin: 6px 0;
+        width: 100%;
+        text-align: center;
+        padding: 6px 8px;
+      }
+
+      .activity {
+        margin-top: 6px;
+        width: 100%;
+        padding: 10px;
+        font-size: 0.9rem;
+      }
+
+      .day-content {
+        margin-top: 0;
+        border-top: none;
+        padding: 0;
+        margin: 8px 0 0 0;
+      }
+
+      .expand-icon {
+        font-size: 1rem;
+      }
+
+      footer {
+        margin-top: 25px;
+        font-size: 0.8rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: clamp(10px, 3vw, 15px);
+      }
+
+      header {
+        margin-bottom: 20px;
+        padding: 15px 0;
+      }
+
+      header h1 {
+        font-size: 1.4rem;
+        margin: 0 0 8px;
+      }
+
+      header p {
+        font-size: 0.9rem;
+      }
+
+      .table-wrapper {
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(212, 175, 55, 0.1);
+      }
+
+      tbody tr {
+        margin-bottom: 10px;
+        border-radius: 8px;
+        padding: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      td {
+        padding: 8px 0;
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+      }
+
+      td.day {
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+      }
+
+      .time {
+        padding: 5px 6px;
+        font-size: 0.75rem;
+        margin: 4px 0;
+      }
+
+      .activity {
+        padding: 8px;
+        font-size: 0.85rem;
+        margin-top: 4px;
+      }
+
+      .expand-icon {
+        font-size: 0.9rem;
+        margin-left: 4px;
+      }
+
+      footer {
+        margin-top: 20px;
+        font-size: 0.75rem;
+        padding: 0 10px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      header h1 {
+        font-size: 1.2rem;
+        word-break: break-word;
+      }
+
+      header p {
+        font-size: 0.8rem;
+      }
+
+      tbody tr {
+        margin-bottom: 8px;
+        padding: 6px;
+      }
+
+      td {
+        padding: 6px 0;
+        font-size: 0.8rem;
+      }
+
+      td.day {
+        font-size: 1rem;
+        margin-bottom: 8px;
+      }
+
+      .time {
+        padding: 4px 4px;
+        font-size: 0.7rem;
+      }
+
+      .activity {
+        padding: 6px;
+        font-size: 0.8rem;
+      }
+
+      footer {
+        font-size: 0.7rem;
+      }
+    }
+
+    @media (min-width: 1920px) {
+      header h1 {
+        font-size: 3rem;
+      }
+
+      .table-wrapper {
+        box-shadow: 0 35px 80px rgba(0, 0, 0, 0.8);
+      }
+
+      thead th {
+        padding: 24px 20px;
+        font-size: 1.2rem;
+      }
+
+      td {
+        padding: 24px 20px;
+        font-size: 1rem;
+      }
+
+      td.day {
+        font-size: 1.2rem;
+      }
+
+      .time {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+      }
+
+      footer {
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>L'emploi du temps</h1>
+  
+    </header>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Jour</th>
+            <th>Activités</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="day" data-label="jour">Lundi <span class="expand-icon">▼</span></td>
+            <td data-label="activité">
+              <div class="time">11:00 → 13:00</div>
+              <div class="activity">📚 Étude des matières - Focus: Mathématiques et Sciences</div>
+              <div class="time">18:00 → 20:00</div>
+              <div class="activity">🔬 Exercices appliqués - Résolution de problèmes complexes</div>
+              <div class="day-content">
+                <div style="color: var(--light-gold); font-size: 0.9rem; margin: 8px 0;">📖 Objectifs d'apprentissage:</div>
+                <div style="font-size: 0.85rem; color: var(--text);">✓ Maîtriser les concepts fondamentaux<br>✓ Renforcer la compréhension théorique<br>✓ Préparer les exercices pratiques</div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="day" data-label="jour">Mardi <span class="expand-icon">▼</span></td>
+            <td data-label="activité">
+              <div class="time">11:00 → 13:00</div>
+              <div class="activity">📚 Étude des matières - Focus: Langues et Littérature</div>
+              <div class="time">20:00 → 20:30</div>
+              <div class="activity">✏️ Exercices linguistiques et rédaction</div>
+              <div class="day-content">
+                <div style="color: var(--light-gold); font-size: 0.9rem; margin: 8px 0;">📖 Objectifs d'apprentissage:</div>
+                <div style="font-size: 0.85rem; color: var(--text);">✓ Améliorer la grammaire et la syntaxe<br>✓ Développer les compétences d'expression<br>✓ Enrichir le vocabulaire</div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="day" data-label="jour">Mercredi <span class="expand-icon">▼</span></td>
+            <td data-label="activité">
+              <div class="time">11:00 → 13:00</div>
+              <div class="activity">📚 Étude des matières - Focus: Histoire et Géographie</div>
+              <div class="time">20:00 → 21:30</div>
+              <div class="activity">🗺️ Analyse et synthèse des connaissances</div>
+              <div class="day-content">
+                <div style="color: var(--light-gold); font-size: 0.9rem; margin: 8px 0;">📖 Objectifs d'apprentissage:</div>
+                <div style="font-size: 0.85rem; color: var(--text);">✓ Contextualiser les événements historiques<br>✓ Analyser les données géographiques<br>✓ Développer la pensée critique</div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="day" data-label="jour">Jeudi <span class="expand-icon">▼</span></td>
+            <td data-label="activité">
+              <div class="time">16:00 → 19:00</div>
+              <div class="activity">🧠 Session intensive - Révision générale et consolidation</div>
+              <div class="day-content">
+                <div style="color: var(--light-gold); font-size: 0.9rem; margin: 8px 0;">📖 Objectifs d'apprentissage:</div>
+                <div style="font-size: 0.85rem; color: var(--text);">✓ Revoir toutes les notions de la semaine<br>✓ Identifier les points faibles<br>✓ Renforcer la compréhension globale</div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="day" data-label="jour">Vendredi <span class="expand-icon">▼</span></td>
+            <td data-label="activité">
+              <div class="time">14:00 → 15:00</div>
+              <div class="activity">📝 Évaluation formative - Quiz et contrôles</div>
+              <div class="time">17:00 → 18:00</div>
+              <div class="activity">🎯 Correction et feedback personnalisé</div>
+              <div class="day-content">
+                <div style="color: var(--light-gold); font-size: 0.9rem; margin: 8px 0;">📖 Objectifs d'apprentissage:</div>
+                <div style="font-size: 0.85rem; color: var(--text);">✓ Tester la compréhension acquise<br>✓ Identifier les progrès<br>✓ Préparer le week-end d'étude</div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="day" data-label="jour">Samedi <span class="expand-icon">▼</span></td>
+            <td data-label="activité">
+              <div class="time">15:00 → 17:00</div>
+              <div class="activity">💪 Entraînement intensif - Exercices avancés</div>
+              <div class="day-content">
+                <div style="color: var(--light-gold); font-size: 0.9rem; margin: 8px 0;">📖 Objectifs d'apprentissage:</div>
+                <div style="font-size: 0.85rem; color: var(--text);">✓ Appliquer les connaissances à des cas complexes<br>✓ Développer des stratégies de résolution<br>✓ Repousser les limites de compréhension</div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="day" data-label="jour">Dimanche <span class="expand-icon">▼</span></td>
+            <td data-label="activité">
+              <div class="time">10:00 → 13:00</div>
+              <div class="activity">🎓 Session de révision complète - Préparer la semaine suivante</div>
+              <div class="day-content">
+                <div style="color: var(--light-gold); font-size: 0.9rem; margin: 8px 0;">📖 Objectifs d'apprentissage:</div>
+                <div style="font-size: 0.85rem; color: var(--text);">✓ Examiner les défis de la semaine<br>✓ Planifier les axes d'amélioration<br>✓ Se préparer à une nouvelle semaine productive</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    
+  </div>
+
+  <script>
+    // Add click functionality to expand/collapse day details
+    document.querySelectorAll('tbody tr').forEach(row => {
+      const dayCell = row.querySelector('.day');
+      const detailsCell = row.querySelector('td[data-label="activité"]');
+      
+      row.addEventListener('click', function(e) {
+        if (e.target.closest('.expand-icon') || dayCell.contains(e.target)) {
+          e.preventDefault();
+          row.classList.toggle('expanded');
+          
+          // Smooth scroll to row if expanded
+          if (row.classList.contains('expanded')) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      });
+    });
+
+    // Add ripple effect on click
+    document.querySelectorAll('tbody tr').forEach(row => {
+      row.addEventListener('click', function(e) {
+        const ripple = document.createElement('span');
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
+        
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        ripple.style.position = 'absolute';
+        ripple.style.borderRadius = '50%';
+        ripple.style.background = 'rgba(56, 189, 248, 0.5)';
+        ripple.style.pointerEvents = 'none';
+        ripple.style.transform = 'scale(0)';
+        ripple.style.animation = 'ripple-animation 0.6s ease-out';
+        ripple.style.zIndex = '0';
+        
+        this.style.position = 'relative';
+        this.appendChild(ripple);
+        
+        setTimeout(() => ripple.remove(), 600);
+      });
+    });
+
+    // Add ripple animation keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes ripple-animation {
+        to {
+          transform: scale(4);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Add keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      const rows = document.querySelectorAll('tbody tr');
+      const activeRow = document.activeElement;
+      
+      if (e.key === 'Enter' && activeRow.tagName === 'TR') {
+        activeRow.classList.toggle('expanded');
+      }
+    });
+
+    // Prevent text selection on double-click
+    document.querySelectorAll('tbody tr').forEach(row => {
+      row.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+      });
+    });
+  </script>
+</body>
+</html>
+
